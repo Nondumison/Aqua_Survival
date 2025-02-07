@@ -2,9 +2,39 @@ export default class GameManager {
   constructor(scene) {
     this.scene = scene;
     this.score = 0;
+    this.scoreText = null;
+    this.timer = 60;
+    this.timerText = null;
+    this.lives = 5;
+    this.livesText = null;
   }
 
   create() {
+    this.scoreText = this.scene.add.text(20, 20, `Score: ${this.score}`, {
+      fontSize: "32px",
+      fill: "#fff",
+      fontFamily: "Arial",
+    });
+
+    this.timerText = this.scene.add.text(20, 60, `Timer:${this.timer}`, {
+      fontSize: "32px",
+      fill: "#fff",
+      fontFamily: "Arial",
+    });
+
+    this.livesText = this.scene.add.text(20, 100, `Lives: ${this.lives}`, {
+      fontSize: "32px",
+      fill: "#fff",
+      fontFamily: "Arial",
+    });
+
+    this.scene.time.addEvent({
+      delay: 1000,
+      callback: this.updateTimer,
+      callbackScope: this,
+      loop: true,
+    });
+
     this.scene.anims.create({
       key: "swim",
       frames: this.scene.anims.generateFrameNumbers("fish", {
@@ -59,15 +89,28 @@ export default class GameManager {
     this.scene.player.player.setTint(0xff0000);
     this.scene.cameras.main.shake(500, 0.02);
 
-    console.log("Game Over!");
+    this.lives -= 1;
+    this.livesText.setText(`Lives: ${this.lives}`);
+    this.scene.sound.play("collisionSound");
+
+    if (this.lives <= 0) {
+      this.handleGameOver();
+    } else {
+      this.scene.player.player.setPosition(
+        this.scene.worldWidth / 2,
+        this.scene.worldHeight / 2
+      );
+    }
   }
 
   collectOctopus(player, octopus) {
     octopus.destroy();
     this.score += 1;
+    this.scoreText.setText(`Score: ${this.score}`);
+    this.scene.sound.play("collectSound");
 
     if (this.score >= 5) {
-      this.scene.spawnBubble(player.x, player.y);
+      this.spawnBubble(player.x, player.y);
     }
   }
 
@@ -83,5 +126,35 @@ export default class GameManager {
         onComplete: () => bubble.destroy(),
       });
     }
+  }
+  updateTimer() {
+    this.timer -= 1;
+    this.timerText.setText(`Time: ${this.timer}`);
+
+    if (this.timer <= 0) {
+      this.handleGameOver();
+    }
+  }
+
+  handleGameOver() {
+    this.scene.physics.pause();
+    this.scene.player.stop();
+    this.scene.enemy.stop();
+    this.scene.octopus.stop();
+    this.scene.backgroundFish.stop();
+    this.scene.backgroundMusic.stop();
+
+    this.scene.add
+      .text(
+        this.scene.cameras.main.centerX,
+        this.scene.cameras.main.centerY,
+        "Game Over!",
+        {
+          fontSize: "64px",
+          fill: "#ff0000",
+          fontFamily: "Arial",
+        }
+      )
+      .setOrigin(0.5);
   }
 }
